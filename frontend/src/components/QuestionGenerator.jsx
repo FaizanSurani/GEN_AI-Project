@@ -4,14 +4,17 @@ import axios from "axios";
 const QuestionGenerator = () => {
   const [question, setQuestion] = useState("");
   const [topic, setTopic] = useState("");
+  const [difficulty, setDifficulty] = useState("Easy");
+  const [questionType, setQuestionType] = useState("Conceptual");
   const [answer, setAnswer] = useState("");
   const [accuracy, setAccuracy] = useState("");
 
-  const topics = ["Geography", "Health", "Sports"];
+  const difficulties = ["Easy", "Medium", "Hard"];
+  const questionTypes = ["Conceptual", "Scenario-based", "Debugging"];
 
   const handleQuestion = async () => {
     if (!topic) {
-      alert("Please select a topic!!!");
+      alert("Please write a topic!!!");
     }
 
     try {
@@ -19,6 +22,8 @@ const QuestionGenerator = () => {
         "http://localhost:5000/api/generateQuestion",
         {
           topic,
+          difficulty: difficulty.toLowerCase(),
+          questionType: questionType.toLowerCase(),
         }
       );
       console.log(response);
@@ -41,7 +46,18 @@ const QuestionGenerator = () => {
       answer,
     });
 
-    setAccuracy(response.data.evaluate);
+    setAccuracy(response.data.feedback);
+    const followUpRes = await axios.post(
+    "http://localhost:5000/api/followUpQuestion",
+      {
+        topic,
+        previousQuestion: question,
+        score: response.data.score
+      }
+    );
+
+    setQuestion(followUpRes.data.followUpQuestion);
+    setDifficulty(followUpRes.data.difficulty);
     setAnswer("");
   };
   return (
@@ -52,21 +68,43 @@ const QuestionGenerator = () => {
             Gen AI App
           </h1>
         </div>
-        <select
-          id="topic"
-          value={topic}
-          className="w-full max-w-sm m-4 block text-gray-700 text-sm font-medium border border-gray-300 rounded-lg px-4 py-2 focus:outline-none"
-          onChange={(e) => setTopic(e.target.value)}>
-          <option value="">Select a topic</option>
-          {topics.map((t) => (
-            <option value={t} key={t}>
-              {t}
-            </option>
-          ))}
-        </select>
+        <div className="w-full flex justify-center">
+          <input
+            type="text"
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            placeholder="Topic to generate a question"
+            className="w-[20%] max-w-sm m-4 block text-gray-700 text-sm font-medium border border-gray-300 rounded-lg px-4 py-2 focus:outline-none"
+          />
+          <select
+            id="difficulty"
+            value={difficulty}
+            onChange={(e) => setDifficulty(e.target.value)}
+            className="w-[7%] max-w-sm m-4 block text-gray-700 text-sm font-medium border border-gray-300 rounded-lg px-4 py-2 focus:outline-none"
+          >
+            {difficulties.map((d, i) => (
+              <option value={d} key={i}>
+                {d}
+              </option>
+            ))}
+          </select>
+          <select
+            id="questionType"
+            value={questionType}
+            onChange={(e) => setQuestionType(e.target.value)}
+            className="w-[12%] max-w-sm m-4 block text-gray-700 text-sm font-medium border border-gray-300 rounded-lg px-4 py-2 focus:outline-none"
+          >
+            {questionTypes.map((q, i) => (
+              <option value={q} key={i}>
+                {q}
+              </option>
+            ))}
+          </select>
+        </div>
         <button
           onClick={handleQuestion}
-          className="w-1/6 bg-red-600 py-2 px-4 rounded-lg text-white font-medium hover:bg-red-700 transition duration-150">
+          className="w-1/6 bg-red-600 py-2 px-4 rounded-lg text-white font-medium hover:bg-red-700 transition duration-150"
+        >
           Generate Question
         </button>
         <div className="mt-4">
@@ -95,7 +133,8 @@ const QuestionGenerator = () => {
         )}
         <button
           className="w-1/6 bg-blue-600 py-2 px-4 mt-4 rounded-lg text-white font-medium hover:bg-blue-700 transition duration-150"
-          onClick={handleAnswer}>
+          onClick={handleAnswer}
+        >
           Submit Answer
         </button>
       </div>
